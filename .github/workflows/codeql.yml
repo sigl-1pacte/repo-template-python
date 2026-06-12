@@ -5,7 +5,8 @@ on:
   push:
     branches: [main, dev]
   schedule:
-    - cron: "24 3 * * 1" // Every Monday at 3:24 AM
+    # Every Monday at 03:24 UTC.
+    - cron: "24 3 * * 1"
 
 permissions:
   actions: read
