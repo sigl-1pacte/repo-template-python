@@ -18,8 +18,8 @@ def search_users(username: str):
     connection = sqlite3.connect("users.db")
     cursor = connection.cursor()
 
-    query = f"SELECT id, username FROM users WHERE username = '{username}'"
-    cursor.execute(query)
+    query = "SELECT id, username FROM users WHERE username = ?"
+    cursor.execute(query, (username,))
 
     return {"users": cursor.fetchall()}
 
