@@ -3,10 +3,10 @@ name: Python CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main,dev]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || github.ref }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -28,7 +30,24 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --dev
 
-      - name: Ruff lint
+      - name: Ruff auto-fix
+        run: uv run ruff check . --fix --unsafe-fixes
+
+      - name: Ruff format
+        run: uv run ruff format .
+
+      - name: Commit Ruff fixes
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "style: apply ruff fixes"
+            git push
+          fi
+
+      - name: Ruff lint check
         run: uv run ruff check .
 
       - name: Ruff format check
