@@ -76,6 +76,9 @@ Bandit and pip-audit run as non-blocking steps in CI while the template is still
 generic. They can be made blocking later by removing `continue-on-error: true`
 from the workflow.
 
+CodeQL is managed as code in `.github/workflows/codeql.yml`. It runs on pull
+requests, pushes to `main`, and once a week on Monday.
+
 ---
 
 ## Building and pushing the image
