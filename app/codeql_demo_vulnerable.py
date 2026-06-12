@@ -4,6 +4,7 @@ Do not keep this file in production repositories. It exists only to confirm that
 CodeQL detects dangerous data flow from user-controlled input to risky sinks.
 """
 
+import re
 import sqlite3
 import subprocess
 
@@ -25,9 +26,11 @@ def search_users(username: str):
 
 @router.get("/demo/ping")
 def ping_host(host: str):
+    if not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", host):
+        return {"output": "Invalid host"}
+
     result = subprocess.run(
-        f"ping -c 1 {host}",
-        shell=True,
+        ["ping", "-c", "1", host],
         capture_output=True,
         text=True,
         check=False,
