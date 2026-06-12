@@ -58,6 +58,39 @@ GET /health  →  {"status": "ok"}
 
 ---
 
+## Quality checks
+
+```bash
+# Install locked dependencies, including CI tooling
+uv sync --locked --dev
+
+# Run the same checks as GitHub Actions
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+uv run bandit -r . -x ./tests,./.venv,./venv
+uv run pip-audit
+```
+
+In GitHub Actions, Ruff runs an auto-fix pass before the final checks:
+
+```bash
+uv run ruff check . --fix --unsafe-fixes
+uv run ruff format .
+```
+
+When the workflow has write access to the branch, it commits those fixes before
+continuing with tests and security checks.
+
+Bandit and pip-audit run as non-blocking steps in CI while the template is still
+generic. They can be made blocking later by removing `continue-on-error: true`
+from the workflow.
+
+CodeQL is managed as code in `.github/workflows/codeql.yml`. It runs on pull
+requests, pushes to `main`, and once a week on Monday.
+
+---
+
 ## Building and pushing the image
 
 ```bash
