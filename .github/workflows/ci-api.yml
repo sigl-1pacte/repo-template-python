@@ -1,0 +1,82 @@
+name: Python App CI
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        required: true
+        type: string
+      app-path:
+        required: true
+        type: string
+      python-version:
+        required: false
+        type: string
+        default: "3.12"
+
+permissions:
+  contents: write
+
+jobs:
+  quality:
+    name: Python quality
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.app-path }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install ${{ inputs.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --locked --dev
+
+      - name: Ruff auto-fix
+        run: uv run ruff check . --fix --unsafe-fixes
+
+      - name: Ruff format
+        run: uv run ruff format .
+
+      - name: Commit Ruff fixes
+        if: github.event_name == 'push'
+        working-directory: ${{ github.workspace }}
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add ${{ inputs.app-path }}
+            git commit -m "style(${{ inputs.app-name }}): apply ruff fixes"
+            git push
+          fi
+
+      - name: Ruff lint check
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Run tests if present
+        run: |
+          if [ -d tests ]; then
+            uv run pytest
+          else
+            echo "No tests directory found for ${{ inputs.app-name }}"
+          fi
+
+      - name: Bandit security scan
+        run: uv run bandit -r . -x ./tests,./.venv,./venv
+        continue-on-error: true
+
+      - name: Dependency audit
+        run: uv run pip-audit
+        continue-on-error: true

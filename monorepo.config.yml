@@ -1,0 +1,8 @@
+# Monorepo CI configuration generated from platform choices.
+project: my-service
+
+apps:
+  - name: api
+    path: apps/api
+    language: python
+    python_version: "3.12"

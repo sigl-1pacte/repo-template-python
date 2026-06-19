@@ -21,6 +21,7 @@ dev = [
     "ruff>=0.15.17",
     "bandit>=1.9.4",
     "pip-audit>=2.10.1",
+    "pyyaml>=6.0.3",
 ]
 
 [tool.ruff]

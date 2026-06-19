@@ -1,12 +1,61 @@
-from fastapi import FastAPI
+from typing import Any
+
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
+from generate import ROOT, generate_ci_files_from_payload
+
 app = FastAPI(title="my-service")
+
+SUPPORTED_LANGUAGES = ["python"]
+PLANNED_LANGUAGES = ["node", "go", "rust", "java"]
 
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/ci/languages")
+def ci_languages():
+    return {
+        "supported": SUPPORTED_LANGUAGES,
+        "planned": PLANNED_LANGUAGES,
+    }
+
+
+@app.post("/ci/generate/preview")
+def preview_ci_generation(payload: dict[str, Any]):
+    try:
+        files, warnings = generate_ci_files_from_payload(payload)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    return {
+        "status": "preview",
+        "warnings": warnings,
+        "generated_files": sorted(files),
+        "files": files,
+    }
+
+
+@app.post("/ci/generate/apply")
+def apply_ci_generation(payload: dict[str, Any]):
+    try:
+        files, warnings = generate_ci_files_from_payload(payload)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    for relative_path, content in files.items():
+        path = ROOT / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+
+    return {
+        "status": "generated",
+        "warnings": warnings,
+        "generated_files": sorted(files),
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
